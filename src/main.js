@@ -40,11 +40,44 @@ board.position.y = 0.05
 scene.add(board)
 
 // Placeholder cake (radius 2, height 1.5), sitting on top of the board
-const cake = new THREE.Mesh(
-  new THREE.CylinderGeometry(2, 2, 1.5, 64),
-  new THREE.MeshStandardMaterial({ color: '#efe6d8' })
+// --- Cake dimensions (we'll reuse these in later steps) ---
+const CAKE_RADIUS = 2
+const CAKE_HEIGHT = 1.4
+const BEVEL = 0.06
+const BOARD_TOP = 0.1
+
+// Build a closed 2D outline whose radius wobbles around the circle
+function makeWavyShape(radius, waves, amplitude, steps = 240) {
+  const shape = new THREE.Shape()
+  for (let i = 0; i < steps; i++) {
+    const angle = (i / steps) * Math.PI * 2
+    const r = radius + Math.sin(angle * waves) * amplitude
+    const x = Math.cos(angle) * r
+    const y = Math.sin(angle) * r
+    if (i === 0) shape.moveTo(x, y)
+    else shape.lineTo(x, y)
+  }
+  return shape
+}
+
+// Push the outline into a 3D slab with softly rounded edges
+const cakeGeometry = new THREE.ExtrudeGeometry(
+  makeWavyShape(CAKE_RADIUS, 16, 0.07),
+  {
+    depth: CAKE_HEIGHT,
+    bevelEnabled: true,
+    bevelThickness: BEVEL,
+    bevelSize: BEVEL,
+    bevelSegments: 4,
+  }
 )
-cake.position.y = 0.1 + 0.75
+cakeGeometry.rotateX(-Math.PI / 2) // extrusion runs along Z, so stand it upright
+
+const cake = new THREE.Mesh(
+  cakeGeometry,
+  new THREE.MeshStandardMaterial({ color: '#efe6d8', roughness: 0.8 })
+)
+cake.position.y = BOARD_TOP + BEVEL // bevel adds a little below the base
 scene.add(cake)
 
 // Keep the canvas correct when the window resizes
